@@ -1,37 +1,16 @@
 # Alzheimer's Disease Classification from Brain MRI
 
-A deep learning pipeline that classifies Alzheimer's disease severity from structural brain MRI scans. Two CNN architectures are developed and compared — a custom-built CNN and a fine-tuned ResNet50V2 transfer learning model — with the transfer learning approach achieving **82% accuracy** and a **macro-average AUC of 0.933**.
+A deep learning pipeline that classifies Alzheimer's disease severity from structural brain MRI scans. Two CNN architectures are developed and compared: A custom-built CNN and a fine-tuned ResNet50V2 transfer learning model, with the transfer learning approach achieving **82% accuracy** and a **macro-average AUC of 0.933**.
 
 ---
 
 ## Overview
 
-Alzheimer's disease accounts for approximately two-thirds of dementia cases globally, yet early-stage diagnosis remains difficult — subtle structural brain changes overlap with normal ageing and are hard to detect visually from MRI alone. This project explores whether convolutional neural networks can reliably automate the classification of disease severity from 2D brain MRI slices, and evaluates the trade-offs between building a model from scratch versus leveraging pre-trained ImageNet weights.
+Alzheimer's disease accounts for approximately two-thirds of dementia cases globally, yet early-stage diagnosis remains difficult. Subtle structural brain changes overlap with normal ageing and are hard to detect from MRI imaging alone. This project explores whether convolutional neural networks can reliably automate the classification of disease severity from 2D brain MRI scans, evaluating the trade-offs between building a model from scratch versus leveraging pre-trained ImageNet models.
 
 **Classes:** No Impairment · Mild Impairment · Moderate Impairment
 
 **Dataset:** 5,076 MRI images — inherently imbalanced (50.4% No, 35.3% Mild, 14.3% Moderate)
-
----
-
-## Results
-
-### Overall Performance
-
-| Model | Accuracy | Weighted F1 | Macro F1 | AUC |
-|---|---|---|---|---|
-| Model 1 — Custom CNN | 61% | 0.61 | 0.58 | 0.846 |
-| Model 2 — ResNet50V2 | **82%** | **0.82** | **0.81** | **0.933** |
-
-### Per-Class F1 Scores
-
-| Class | Custom CNN | ResNet50V2 |
-|---|---|---|
-| No Impairment | 0.71 | 0.85 |
-| Mild Impairment | 0.49 | 0.79 |
-| Moderate Impairment | 0.54 | 0.78 |
-
-ResNet50V2 achieved substantially more balanced performance across all three classes — the gap is most pronounced on minority classes (Mild and Moderate), where the custom CNN struggled most.
 
 ---
 
@@ -68,25 +47,46 @@ Computed class weights using scikit-learn's `compute_class_weight`, assigning hi
 
 ---
 
+## Results
+
+### Overall Performance
+
+| Model | Accuracy | Weighted F1 | Macro F1 | AUC |
+|---|---|---|---|---|
+| Model 1 — Custom CNN | 61% | 0.61 | 0.58 | 0.846 |
+| Model 2 — ResNet50V2 | **82%** | **0.82** | **0.81** | **0.933** |
+
+### Per-Class F1 Scores
+
+| Class | Custom CNN | ResNet50V2 |
+|---|---|---|
+| No Impairment | 0.71 | 0.85 |
+| Mild Impairment | 0.49 | 0.79 |
+| Moderate Impairment | 0.54 | 0.78 |
+
+ResNet50V2 yielded a much more balanced performance across all three classes. The gap is most pronounced on minority classes (Mild and Moderate), where the custom CNN struggled most.
+
+---
+
 ## Key Findings
 
 **Training instability in the custom CNN.** Model 1 showed pronounced spikes in validation loss (particularly around epoch 10) and erratic accuracy curves throughout training. This behaviour is consistent with gradient explosion — a phenomenon where gradients become excessively large during backpropagation, causing unstable weight updates. Similar instability was reported by Zhang et al. (2024), who found that ReLU activation contributed to gradient explosions in their AD classification model (ADNet), and resolved it by switching to ELU (Exponential Linear Unit) activation.
 
 **Transfer learning resolved minority class failures.** The custom CNN struggled most with Mild Impairment (F1: 0.49), frequently misclassifying these cases as either No Impairment (111 instances) or Moderate Impairment (65 instances). ResNet50V2 corrected this, correctly identifying 286 Mild and 123 Moderate Impairment cases. Pre-trained ImageNet features generalised effectively to MRI, mapping biological markers of brain atrophy that the custom CNN could not learn reliably from scratch.
 
-**Mild overfitting in ResNet50V2.** Despite stronger performance, Model 2 showed signs of overfitting — training accuracy reached ~1.0 while validation accuracy plateaued around 80%. This is likely attributable to the relatively small dataset (5,076 images) relative to the model's high parameter count. The temporary disturbance at epoch 10 (start of fine-tuning) was expected and resolved as training continued.
+**Mild overfitting in ResNet50V2.** Despite stronger performance, Model 2 showed signs of overfitting. Training accuracy reached ~1.0 while validation accuracy plateaued around 80%. This is likely attributable to the relatively small dataset (5,076 images) relative to the model's high parameter count. The temporary disturbance at epoch 10 (start of fine-tuning) was expected and resolved as training continued.
 
-**CLAHE improved feature separability.** Applying adaptive histogram equalisation as a preprocessing step enhanced the contrast of subtle cortical and hippocampal structures in the MRI images, likely contributing to improved model performance — particularly for the nuanced boundary between Mild and No Impairment cases.
+**CLAHE improved feature separability.** Applying adaptive histogram equalisation as a preprocessing step enhanced the contrast of subtle cortical and hippocampal structures in the MRI images, likely contributing to improved model performance (particularly for the nuanced boundary between Mild and No Impairment cases).
 
 ---
 
 ## Limitations & Future Work
 
-**2D slices discard volumetric context.** AD involves 3D structural changes — hippocampal and cortical atrophy — that a 2D slice cannot fully capture. Future work should use patient-stratified 3D MRI volumes with 3D-CNN architectures.
+**2D slices discard volumetric context.** AD involves 3D structural changes (hippocampal and cortical atrophy) that a 2D slice cannot fully capture. Future work should use patient-stratified 3D MRI volumes with 3D-CNN architectures.
 
 **Explainability.** Neither model provides insight into *which* brain regions drive predictions. Integrating **Grad-CAM** (Gradient-weighted Class Activation Mapping) would spatially verify that predictions are driven by clinically plausible regions (e.g. ventricular enlargement, cortical thinning) rather than image artefacts.
 
-**Activation function.** Replacing ReLU with **ELU** may improve training stability in the custom CNN by producing smoother gradients and reducing the risk of gradient explosion — as demonstrated by Zhang et al. (2024).
+**Activation function.** Replacing ReLU with **ELU** may improve training stability in the custom CNN by producing smoother gradients and reducing the risk of gradient explosion (as demonstrated by Zhang et al. (2024).
 
 **Dataset size and diversity.** A larger and more demographically diverse dataset would reduce overfitting risk and help address potential algorithmic bias across different patient populations.
 
@@ -94,9 +94,9 @@ Computed class weights using scikit-learn's `compute_class_weight`, assigning hi
 
 ## Ethical Considerations
 
-Deep learning models in clinical settings raise important ethical questions. These models function as "black boxes" — their decision-making processes are opaque, making it difficult for clinicians to explain, audit, or challenge predictions. In Alzheimer's diagnosis, an incorrect classification could delay treatment or cause unnecessary distress.
+Deep learning models in clinical settings raise important ethical questions. These models function as "black boxes". Their decision-making processes are opaque, making it difficult for clinicians to explain, audit, or challenge predictions. In Alzheimer's diagnosis, an incorrect classification could delay treatment or cause unnecessary distress.
 
-Algorithmic bias is also a concern: if training data underrepresents certain demographics (by race, gender, or age), the model may perform inequitably across populations. Furthermore, MRI data is highly sensitive patient information, requiring strong governance and data protection measures — guided by frameworks such as HIPAA — to prevent misuse or breach.
+Algorithmic bias is also a concern: if training data underrepresents certain demographics (by race, gender, or age), the model may perform inequitably across populations. Furthermore, MRI data is highly sensitive patient information, requiring strong governance and data protection measures (guided by frameworks such as HIPAA) to prevent misuse or breach.
 
 While the results here are promising, these models are not yet suitable for independent clinical deployment. Any real-world application would need to be paired with explainability tools, diverse training data, and a clear regulatory and accountability framework.
 
@@ -108,10 +108,10 @@ This notebook is designed to run on **Google Colab** with a GPU runtime (T4 reco
 
 1. Open [Google Colab](https://colab.research.google.com/) and upload `MASTER_MRI_PREDICTIONS.ipynb`
 2. Set runtime to GPU: **Runtime → Change runtime type → T4 GPU**
-3. Download the [Alzheimer's MRI dataset](https://www.kaggle.com/datasets/aryansinghal10/alzheimer-s-disease-dataset) from Kaggle (use the MildImpairment, ModerateImpairment, and NoImpairment classes)
+3. Download the Alzheimer's MRI dataset locally
 4. Upload `AD_Dataset.zip` to your Google Drive
 5. Update `ZIP_PATH` in the notebook to your Drive path
-6. Run all cells top to bottom
+6. Run all cells within the script 
 
 ### Dependencies
 
